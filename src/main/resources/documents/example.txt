@@ -1,0 +1,1 @@
+This harmless document exists only for the path traversal demonstration.
