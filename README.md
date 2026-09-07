@@ -23,8 +23,10 @@ dependency submission publica el grafo Maven y `.github/dependabot.yml` configur
 
 ### Secret Scanning
 
-`application-demo-secrets.properties` contiene únicamente credenciales públicas de ejemplo de AWS,
-deliberadamente inválidas. Secret Scanning es una función de GitHub, no un Action.
+`application-demo-secrets.properties` contiene únicamente credenciales públicas de ejemplo de AWS
+y una conexión MongoDB ficticia contra `localhost`. Secret Scanning es una función de GitHub, no
+un Action. Para detectar la conexión de prueba debe estar habilitada la opción de patrones
+genéricos (`secret_scanning_non_provider_patterns`).
 
 ## Ejecución local
 
