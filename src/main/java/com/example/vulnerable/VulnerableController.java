@@ -9,16 +9,27 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.regex.Pattern;
 
 import javax.sql.DataSource;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 public class VulnerableController {
+
+    // Hostname o IPv4 simples; alcance intencionalmente acotado a lo que este endpoint de
+    // diagnóstico necesita (no admite IPv6 ni IDN).
+    private static final Pattern SAFE_HOST = Pattern.compile("^[a-zA-Z0-9](?:[a-zA-Z0-9.-]{0,251}[a-zA-Z0-9])?$");
+    private static final boolean WINDOWS = System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("win");
+    // Visible en el paquete para permitir verificar en tests que se resuelve a una ruta absoluta.
+    static final Path PING_EXECUTABLE = resolvePingExecutable();
 
     private final DataSource dataSource;
 
@@ -48,12 +59,29 @@ public class VulnerableController {
 
     @GetMapping("/diagnostics")
     public String runDiagnostics(@RequestParam String host) throws IOException {
-        Process process = new ProcessBuilder("sh", "-c", "ping -c 1 " + host).start();
+        if (!SAFE_HOST.matcher(host).matches()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid host");
+        }
+        List<String> command = WINDOWS
+                ? List.of(PING_EXECUTABLE.toString(), "-n", "1", host)
+                : List.of(PING_EXECUTABLE.toString(), "-c", "1", host);
+        Process process = new ProcessBuilder(command).start();
         return new String(process.getInputStream().readAllBytes());
     }
 
     @GetMapping(value = "/welcome", produces = MediaType.TEXT_HTML_VALUE)
     public String welcome(@RequestParam String name) {
         return "<html><body><h1>Bienvenido " + name + "</h1></body></html>";
+    }
+
+    private static Path resolvePingExecutable() {
+        List<String> candidates = WINDOWS
+                ? List.of("C:\\Windows\\System32\\PING.EXE")
+                : List.of("/bin/ping", "/usr/bin/ping", "/sbin/ping");
+        return candidates.stream()
+                .map(Path::of)
+                .filter(Files::isRegularFile)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("No se encontró un binario de ping válido en este sistema"));
     }
 }
