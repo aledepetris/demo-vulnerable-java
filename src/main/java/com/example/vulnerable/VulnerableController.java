@@ -70,9 +70,11 @@ public class VulnerableController {
         if (!SAFE_HOST.matcher(host).matches()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid host");
         }
-        List<String> command = WINDOWS
-                ? List.of(PING_EXECUTABLE.toString(), "-n", "1", host)
-                : List.of(PING_EXECUTABLE.toString(), "-c", "1", host);
+        List<String> command = new ArrayList<>();
+        command.add(PING_EXECUTABLE.toString());
+        command.add(WINDOWS ? "-n" : "-c");
+        command.add("1");
+        command.add(host);
         Process process = new ProcessBuilder(command).start();
         return new String(process.getInputStream().readAllBytes());
     }
