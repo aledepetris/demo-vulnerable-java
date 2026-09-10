@@ -4,9 +4,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.util.HtmlUtils;
 
 @RestController
 public class VulnerableController {
@@ -28,6 +29,7 @@ public class VulnerableController {
     // diagnóstico necesita (no admite IPv6 ni IDN).
     private static final Pattern SAFE_HOST = Pattern.compile("^[a-zA-Z0-9](?:[a-zA-Z0-9.-]{0,251}[a-zA-Z0-9])?$");
     private static final boolean WINDOWS = System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("win");
+    private static final Path DOCUMENTS_DIRECTORY = Path.of("src/main/resources/documents").toAbsolutePath().normalize();
     // Visible en el paquete para permitir verificar en tests que se resuelve a una ruta absoluta.
     static final Path PING_EXECUTABLE = resolvePingExecutable();
 
@@ -39,14 +41,16 @@ public class VulnerableController {
 
     @GetMapping("/users")
     public List<String> findUsers(@RequestParam String name) throws SQLException {
-        String query = "SELECT name FROM users WHERE name = '" + name + "'";
+        String query = "SELECT name FROM users WHERE name = ?";
         List<String> users = new ArrayList<>();
 
         try (Connection connection = dataSource.getConnection();
-             Statement statement = connection.createStatement();
-             ResultSet results = statement.executeQuery(query)) {
-            while (results.next()) {
-                users.add(results.getString("name"));
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, name);
+            try (ResultSet results = statement.executeQuery()) {
+                while (results.next()) {
+                    users.add(results.getString("name"));
+                }
             }
         }
         return users;
@@ -54,7 +58,11 @@ public class VulnerableController {
 
     @GetMapping("/documents")
     public String readDocument(@RequestParam String file) throws IOException {
-        return Files.readString(Path.of("src/main/resources/documents").resolve(file));
+        Path document = DOCUMENTS_DIRECTORY.resolve(file).normalize();
+        if (!document.startsWith(DOCUMENTS_DIRECTORY)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid document path");
+        }
+        return Files.readString(document);
     }
 
     @GetMapping("/diagnostics")
@@ -71,7 +79,7 @@ public class VulnerableController {
 
     @GetMapping(value = "/welcome", produces = MediaType.TEXT_HTML_VALUE)
     public String welcome(@RequestParam String name) {
-        return "<html><body><h1>Bienvenido " + name + "</h1></body></html>";
+        return "<html><body><h1>Bienvenido " + HtmlUtils.htmlEscape(name) + "</h1></body></html>";
     }
 
     private static Path resolvePingExecutable() {
