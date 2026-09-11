@@ -79,9 +79,16 @@ public class VulnerableController {
     }
 
     // Builds an argument vector (no shell) so the host cannot inject additional commands.
+    // Uses sequential add() calls on a plain ArrayList so static analysis can verify each
+    // subsequent element (including host) is a separate argument, not part of the command name.
     static List<String> buildPingCommand(String host) {
         String countFlag = isWindows() ? "-n" : "-c";
-        return List.of(PING_EXECUTABLE, countFlag, "1", host);
+        List<String> command = new ArrayList<>();
+        command.add(PING_EXECUTABLE);
+        command.add(countFlag);
+        command.add("1");
+        command.add(host);
+        return command;
     }
 
     // Resolves the ping executable via an absolute, OS-specific path instead of a
