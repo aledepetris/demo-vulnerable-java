@@ -65,7 +65,7 @@ public class VulnerableController {
         return Files.readString(resolved);
     }
 
-    @GetMapping("/diagnostics")
+    @GetMapping(value = "/diagnostics", produces = MediaType.TEXT_PLAIN_VALUE)
     public String runDiagnostics(@RequestParam String host) {
         if (!HOST_PATTERN.matcher(host).matches()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid host");
@@ -73,7 +73,7 @@ public class VulnerableController {
         try {
             InetAddress address = InetAddress.getByName(host);
             boolean reachable = address.isReachable(2000);
-            return "host " + host + " reachable=" + reachable;
+            return "host " + HtmlUtils.htmlEscape(host) + " reachable=" + reachable;
         } catch (UnknownHostException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown host", e);
         } catch (IOException e) {

@@ -52,7 +52,8 @@ class VulnerableControllerSecurityTests {
     @Test
     void runDiagnosticsAcceptsAValidHostWithoutSpawningAProcess() throws Exception {
         mockMvc.perform(get("/diagnostics").param("host", "localhost"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("host localhost reachable=")));
     }
 
     @Test
