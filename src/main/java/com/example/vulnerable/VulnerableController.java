@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.util.HtmlUtils;
 
 @RestController
 public class VulnerableController {
@@ -82,6 +83,6 @@ public class VulnerableController {
 
     @GetMapping(value = "/welcome", produces = MediaType.TEXT_HTML_VALUE)
     public String welcome(@RequestParam String name) {
-        return "<html><body><h1>Bienvenido " + name + "</h1></body></html>";
+        return "<html><body><h1>Bienvenido " + HtmlUtils.htmlEscape(name) + "</h1></body></html>";
     }
 }

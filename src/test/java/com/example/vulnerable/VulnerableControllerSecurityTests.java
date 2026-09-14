@@ -54,4 +54,12 @@ class VulnerableControllerSecurityTests {
         mockMvc.perform(get("/diagnostics").param("host", "localhost"))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    void welcomeEscapesHtmlInNameParameter() throws Exception {
+        mockMvc.perform(get("/welcome").param("name", "<script>alert(1)</script>"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("<script>"))))
+                .andExpect(content().string(containsString("&lt;script&gt;")));
+    }
 }
