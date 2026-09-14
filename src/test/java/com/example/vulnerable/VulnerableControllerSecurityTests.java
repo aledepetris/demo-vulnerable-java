@@ -41,4 +41,17 @@ class VulnerableControllerSecurityTests {
         mockMvc.perform(get("/documents").param("file", "example.txt"))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    void runDiagnosticsRejectsHostWithShellMetacharacters() throws Exception {
+        mockMvc.perform(get("/diagnostics").param("host", "localhost; echo INJECTED"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(not(containsString("INJECTED"))));
+    }
+
+    @Test
+    void runDiagnosticsAcceptsAValidHostWithoutSpawningAProcess() throws Exception {
+        mockMvc.perform(get("/diagnostics").param("host", "localhost"))
+                .andExpect(status().isOk());
+    }
 }
