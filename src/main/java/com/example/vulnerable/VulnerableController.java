@@ -12,13 +12,18 @@ import java.util.List;
 
 import javax.sql.DataSource;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 public class VulnerableController {
+
+    private static final Path DOCUMENTS_ROOT =
+            Path.of("src/main/resources/documents").toAbsolutePath().normalize();
 
     private final DataSource dataSource;
 
@@ -45,7 +50,11 @@ public class VulnerableController {
 
     @GetMapping("/documents")
     public String readDocument(@RequestParam String file) throws IOException {
-        return Files.readString(Path.of("src/main/resources/documents").resolve(file));
+        Path resolved = DOCUMENTS_ROOT.resolve(file).normalize();
+        if (!resolved.startsWith(DOCUMENTS_ROOT)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid file path");
+        }
+        return Files.readString(resolved);
     }
 
     @GetMapping("/diagnostics")

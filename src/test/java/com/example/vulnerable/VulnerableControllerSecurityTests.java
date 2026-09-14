@@ -29,4 +29,16 @@ class VulnerableControllerSecurityTests {
                 .andExpect(status().isOk())
                 .andExpect(content().json("[]"));
     }
+
+    @Test
+    void readDocumentRejectsPathTraversalOutsideDocumentsDirectory() throws Exception {
+        mockMvc.perform(get("/documents").param("file", "../application.properties"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void readDocumentStillServesFilesInsideDocumentsDirectory() throws Exception {
+        mockMvc.perform(get("/documents").param("file", "example.txt"))
+                .andExpect(status().isOk());
+    }
 }
