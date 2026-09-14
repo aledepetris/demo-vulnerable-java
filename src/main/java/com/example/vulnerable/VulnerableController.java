@@ -4,9 +4,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,14 +28,16 @@ public class VulnerableController {
 
     @GetMapping("/users")
     public List<String> findUsers(@RequestParam String name) throws SQLException {
-        String query = "SELECT name FROM users WHERE name = '" + name + "'";
+        String query = "SELECT name FROM users WHERE name = ?";
         List<String> users = new ArrayList<>();
 
         try (Connection connection = dataSource.getConnection();
-             Statement statement = connection.createStatement();
-             ResultSet results = statement.executeQuery(query)) {
-            while (results.next()) {
-                users.add(results.getString("name"));
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, name);
+            try (ResultSet results = statement.executeQuery()) {
+                while (results.next()) {
+                    users.add(results.getString("name"));
+                }
             }
         }
         return users;
