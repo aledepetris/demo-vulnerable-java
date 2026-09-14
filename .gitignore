@@ -3,3 +3,7 @@ target/
 .vscode/
 *.iml
 .remediation/
+.github/copilot-instructions.md
+.github/remediation-guide.md
+.github/agents/
+.github/skills/
